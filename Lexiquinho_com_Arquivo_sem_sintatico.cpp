@@ -130,7 +130,6 @@ char tokens[100][30] = {
     "TKEOF"              //59
 };  
 
-
 int pos = 0;
 
 int tk;
@@ -160,14 +159,14 @@ struct pal_res lista_pal[]={{"void",TKVoid},
 
 int palavra_reservada(char lex[])
 {
-int postab=0;
-while (strcmp("fimtabela",lista_pal[postab].palavra)!=0)
-   {
-   if (strcmp(lex,lista_pal[postab].palavra)==0)
-      return lista_pal[postab].tk;
-   postab++;
-   }
-return TKId;
+    int postab=0;
+    while (strcmp("fimtabela",lista_pal[postab].palavra)!=0)
+    {
+    if (strcmp(lex,lista_pal[postab].palavra)==0)
+        return lista_pal[postab].tk;
+    postab++;
+    }
+    return TKId;
 }
 
 void setColor(int color) {
@@ -183,9 +182,10 @@ void proxC();
 // vari�veis globais para retrocesso
 
 typedef struct contexto{long posglobal;
-               int tkant;
-               char cant;
-               char lexant[20];} tcontexto;
+    int tkant;
+    char cant;
+    char lexant[20];
+} tcontexto;
 
 tcontexto pilhacon[1000];
 int topcontexto=0;
@@ -494,16 +494,22 @@ int estado=0,
    }// while
 }// fun��o
 
-
 void getToken(){
     getToken2();
-    printf("%s\n", tokens[tk-1]);
+    // printf("%s\n", tokens[tk-1]);
 }
 
+int errored = 0;
+
 void error(const char expected_token[]){
-    setColor(4);
-    printf("ERRO encontrado na linha %d, coluna %d: esperava token %s, mas encontrou %s\n", lin, col, expected_token, tokens[tk-1]);
-    setColor(7);
+    if (errored == 0){
+        setColor(4);
+        printf("ERRO encontrado na linha %d, coluna %d: esperava token %s, mas encontrou %s\n", lin, col, expected_token, tokens[tk-1]);
+        setColor(7);
+
+        errored = 1;
+    }
+    // exit(0);
 }
 
 int primary_expression(){
@@ -514,6 +520,7 @@ int primary_expression(){
         return 1;
     }
     
+    error("Identifier or Constant");
     return 0;
 }
 
@@ -533,6 +540,7 @@ int additive_expression(){
         }    
     }
 
+    error("+");
     return 0; //SUBSTITUIR POR PRÓXIMA NA CADEIA    
 }
 
@@ -572,15 +580,15 @@ int compound_statement(){
             getToken();
             return 1;
         } 
-        if (statement()){
+        else if (statement()){
             if(tk == TKFechaChaves){
                 getToken();
                 return 1;
             }   
         }
-
-        else error("'}'");
-    } else error("'{'");
+        
+        error("'}' (compound)");
+    } else error("'{' (compound)");
     
     return 0;
 }
@@ -596,7 +604,7 @@ int expression_statement(){
         }
     }
     
-    error("';'");
+    error("';' (expression)");
     return 0;
 }
 
@@ -612,10 +620,10 @@ int selection_statement(){
                     if (statement()){
                         return 1;
                     }
-                }else error("')'");
-            }else error("')'");
-        }else error("'('");
-    }else error("'if'");
+                }else error("')' (selection)");
+            }else error("')' (selection)");
+        }else error("'(' (selection)");
+    }else error("'if' (selection)");
 
     return 0;
 }
@@ -659,5 +667,5 @@ int main()
     // if (P())
     if (statement())
         printf("Compilado com sucesso!");
-    else printf("Faca os ajustes no token %s (%s) e tente compilar novamente", tokens[tk-1], lex);
+    // else printf("Faca os ajustes no token %s (%s) e tente compilar novamente", tokens[tk-1], lex);
 }
