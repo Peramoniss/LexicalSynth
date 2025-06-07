@@ -57,6 +57,9 @@
 #define TKWhile 57
 #define TKFor 58
 #define TKEOF 59
+#define TKStatic 60
+#define TKConst 61
+#define TKCteFloat 62
 
 
 #define false 0
@@ -127,7 +130,10 @@ char tokens[100][30] = {
     "TKDo",              //56
     "TKWhile",           //57
     "TKFor",              //58
-    "TKEOF"              //59
+    "TKEOF",              //59
+    "TKEStatoc",              //60
+    "TKConst",              //61
+    "TKCteFloat",              //62
 };  
 
 int pos = 0;
@@ -154,7 +160,9 @@ struct pal_res lista_pal[]={{"void",TKVoid},
                   {"do",TKDo},
                   {"while",TKWhile},
                   {"for",TKFor},
-                  {"fimtabela",TKEOF}};
+                  {"fimtabela",TKEOF},
+                  {"static",TKStatic},
+                  {"const",TKConst}};
 
 
 int palavra_reservada(char lex[])
@@ -189,6 +197,7 @@ typedef struct contexto{long posglobal;
 
 tcontexto pilhacon[1000];
 int topcontexto=0;
+int backtrack_mode = 0;
 
 void marcaPosToken() {
 	pilhacon[topcontexto].posglobal=ftell(arqin);
@@ -196,9 +205,9 @@ void marcaPosToken() {
 	pilhacon[topcontexto].cant=c;
     strcpy(pilhacon[topcontexto].lexant,lex);
     topcontexto++;
-}
 
-//Implemente aqui a sua funcao restauraPosToken()
+    backtrack_mode = 1; //indica que esta fazendo ma analise com o backtracking e nao deve exibir erros
+}
 
 void restauraPosToken() {
     topcontexto--;
@@ -206,6 +215,8 @@ void restauraPosToken() {
     c=pilhacon[topcontexto].cant;
 	tk=pilhacon[topcontexto].tkant;
     strcpy(lex,pilhacon[topcontexto].lexant);
+
+    backtrack_mode = 0; //indica que parou de fazer a analise do backtracking e pode voltar a mostrar erros
 }
 
 void proxC()
@@ -239,10 +250,21 @@ int estado=0,
                 {proxC();estado=1;break;}
              if (c>='0' && c<='9')
                 {
-                while (c>='0' && c<='9') proxC();
-                lex[posl]='\0';
-                tk=TKCteInt;
-                return;
+                    int floating_constant = 0;
+                    while (c>='0' && c<='9'){
+                        proxC();
+                        if(c=='.'){
+                            if (floating_constant != 0){
+                                goto erro_lexico;
+                            }else{
+                                proxC();
+                                floating_constant++;
+                            }
+                        }
+                    } 
+                    lex[posl]='\0';
+                    tk= floating_constant ? TKCteFloat : TKCteInt;
+                    return;
                 }
              if (c=='"')
                 {
@@ -469,12 +491,13 @@ int estado=0,
              if (c==' ' || c=='\n' || c=='\t' || c=='\r') {proxC();posl--;break;}
              if (c=='\0') {tk=-1;return;}
 
-             //se nao encontrou nenhum dos tokens
-             //setColor(4); //vermelho
+             erro_lexico: //a beleza dos rotulos e do goto
+             setColor(4);
              printf("Erro lexico: encontrou o caracter %c (%d) na linha %d\n",c,c,lin);
              fprintf(arqout,"Erro lexico: encontrou o caracter %c (%d) na linha %d\n",c,c,lin);
-             posl--;
              setColor(7); //padrao (branco)
+             exit(0);
+             posl--;
              while (c!='\n') proxC();
              break;
       case 1:if (c>='a' && c<='z' || c>='A' && c<='Z' || c=='_' || c>='0' && c<='9') {proxC();break;}
@@ -495,14 +518,14 @@ int estado=0,
 }// fun��o
 
 void getToken(){
-    getToken2();
     // printf("%s\n", tokens[tk-1]);
+    getToken2();
 }
 
 int errored = 0;
 
 void error(const char expected_token[]){
-    if (errored == 0){
+    if (errored == 0 && backtrack_mode == 0){
         setColor(4);
         printf("ERRO encontrado na linha %d, coluna %d: esperava token %s, mas encontrou %s\n", lin, col, expected_token, tokens[tk-1]);
         setColor(7);
@@ -515,7 +538,7 @@ void error(const char expected_token[]){
 int primary_expression(){
     // printf("  _%s_  ", tokens[tk-1]);
     printf("Primary expression\n");
-    if (tk == TKId || tk == TKCteInt || tk == TKConstChar){
+    if (tk == TKId || tk == TKCteInt || tk == TKCteFloat || tk == TKConstChar){
         getToken(); //verifica aqui dentro porque ja comeca com o primeiro token lido. Entao esta sempre analisando "atrasado"
         return 1;
     }
@@ -524,13 +547,87 @@ int primary_expression(){
     return 0;
 }
 
+int assignment_expression();
+int postfix_expression();
+int expression();
+
+int argument_expression_list(){
+    int retorno = 0;
+    if (assignment_expression()){
+        retorno = 1;
+        while(tk == TKVirgula){
+            getToken();
+            if(!assignment_expression()) return 0;
+        }
+    }
+
+    return retorno;
+}
+
+int postfix_expression(){
+    /*
+    primary
+    postfix_expression '[' expression ']'
+	| postfix_expression '(' ')'
+	| postfix_expression '(' argument_expression_list ')'
+	| postfix_expression '.' IDENTIFIER
+	| postfix_expression PTR_OP IDENTIFIER
+	| postfix_expression INC_OP
+	| postfix_expression DEC_OP
+    */
+   int retorno = 0;
+    if (primary_expression()){
+        retorno = 1;
+        while (1){
+            if (tk == TKAbreColchete){
+                getToken();
+                if (expression()){
+                    if (tk == TKFechaColchete){
+                        getToken();
+                    }else{
+                        error("]");
+                        return 0;
+                    }
+                }else return 0;
+            }else if (tk == TKAbrePar){
+                getToken();
+                if (tk == TKFechaPar){
+                    getToken();
+                    // retorno = 1;
+                }else if(argument_expression_list()){
+                    if(tk == TKFechaPar){
+                        getToken();
+                        // retorno = 1;
+                    }else{
+                        error(")");
+                        return 0;
+                    }
+                } else return 0;
+            }else if (tk == TKPonto){
+                getToken();
+                if (tk == TKId){
+                    getToken();
+                    // retorno = 1;
+                }else{
+                    error("Identifier");
+                    return 0;
+                }
+            }else break;    
+        }
+    }
+
+    return retorno;
+}
+
+//------------Outros tipos de expressão------------------
+
 int additive_expression(){
     printf("Additive statement\n");
     //printf("????  _%s_  ", tokens[tk-1]);
-    if (primary_expression()){
+    if (postfix_expression()){
         if (tk == TKMais){
             getToken();
-            if(primary_expression()){
+            if(postfix_expression()){
                 if(additive_expression()){
                     return 1;
                 }
@@ -570,6 +667,7 @@ int assignment_expression(){
     return additive_expression();
 }
 
+int statement_list();
 int statement();
 
 int compound_statement(){
@@ -580,7 +678,7 @@ int compound_statement(){
             getToken();
             return 1;
         } 
-        else if (statement()){
+        else if (statement_list()){
             if(tk == TKFechaChaves){
                 getToken();
                 return 1;
@@ -594,7 +692,7 @@ int compound_statement(){
 }
 
 int expression_statement(){
-    printf("Expression statement\n");
+    // printf("Expression statement\n");
     if (tk == TKPontoEVirgula){
         return 1;
     }else if (expression()){
@@ -628,9 +726,181 @@ int selection_statement(){
     return 0;
 }
 
+int declaration_specifiers(){
+    //posso implementar com while pra tirar a recursão desnecessária, mas tira bastante a legibilidade - teria que separar em funções para cada especificador para ficar bom, mas acho desnecessário
+    printf("Declaration Specifiers \n");
+    if (tk == TKVoid || tk == TKInt || tk == TKFloat || tk == TKChar || tk == TKDouble){ //type_specifier
+        getToken();
+        return 1;
+    }else if (tk == TKConst){ //type_qualifier
+        getToken();
+        declaration_specifiers();
+        return 1;
+    }else if (tk == TKStatic){ //storage_class_specifier
+        getToken();
+        declaration_specifiers();
+        return 1;
+    }
+
+    return 0;
+}
+
+int declarator();
+
+int direct_declarator(){
+    printf("Direct Declarator\n");
+    int retorno = 0;
+    if (tk == TKId){
+        getToken();
+        retorno = 1;
+        // return 1;
+    }else if (tk == TKAbrePar){
+        getToken();
+        if (declarator()){
+            if (tk == TKFechaPar){
+                getToken();
+                retorno = 1;
+                // return 1;
+            }else error(")");
+        }else error("Declaration");
+    }
+
+    while (1){ //enquanto conseguir encontrar novas combinações
+        if (tk == TKAbreColchete){ //vetores
+            getToken();
+            if (tk == TKFechaColchete){
+                getToken();
+                retorno = 1;
+            }else if (postfix_expression()){ //teoricamente tinha que passar por umas 15 recursões antes de chegar aqui, mas também sou filho de Deus
+                if (tk == TKFechaColchete){
+                    getToken();
+                    retorno = 1;
+                }
+            }
+        } else if (tk == TKAbrePar){ //funçoes
+            getToken();
+            if (tk == TKFechaPar){
+                getToken();
+                retorno = 1;
+            } 
+
+            if (declaration_specifiers()){
+                if (declarator()) {
+                    retorno = 1;
+
+                    // continua analisando possíveis parâmetros adicionais
+                    while (tk == TKVirgula){
+                        getToken();
+                        if (declaration_specifiers()){
+                            if (!declarator()) {
+                                error("param declarator");
+                                return 0;
+                            }
+                        } else{
+                            error("param specifier");
+                            return 0;
+                        }
+                    }
+
+                    if (tk == TKFechaPar){
+                        getToken();
+                    } else {
+                        error("')' na lista de parâmetros");
+                        return 0;
+                    }
+
+                    compound_statement();
+                } else restauraPosToken(); // declarator falhou
+            } else restauraPosToken(); // specifier falhou 
+        }
+       else break;
+    }
+
+    return retorno;
+    /*
+
+	| direct_declarator '[' constant_expression ']'
+	| direct_declarator '[' ']'
+	| direct_declarator '(' parameter_type_list ')'
+	| direct_declarator '(' identifier_list ')'
+	| direct_declarator '(' ')'
+	*/
+}
+
+int declarator(){
+    /*declarator
+	: pointer direct_declarator
+	| direct_declarator
+	;
+    */
+    printf("Declarator\n");
+    if (tk == TKProd){ //*
+        getToken();
+        while(tk == TKProd) getToken();
+        if (direct_declarator()) return 1;
+    }else if (direct_declarator()) return 1;
+
+    return 0;
+}
+int init_declarator(){
+    /*
+    : declarator
+	| declarator '=' initializer
+	;
+    */
+    printf("Init Declarator\n");
+    if (declarator()){
+        if (tk == TKAtrib){
+            getToken();
+            if (assignment_expression()) return 1; //initializer
+        }       
+
+        return 1;
+    }
+   
+    return 0;
+}
+
+int init_declarator_list(){
+    /*
+    : init_declarator
+	| init_declarator_list ',' init_declarator
+	;
+    */
+    printf("Init Declarator List\n");
+    int declared = 0;
+    while (init_declarator()){
+        declared = 1;
+        if(tk == TKVirgula){
+            getToken();
+        } else break; //se não for virgula, não poderia continuar declarando
+    }
+
+    return declared;
+}
+
+int declaration(){
+    printf("Declaration\n");
+    if(declaration_specifiers()){
+        if (tk == TKPontoEVirgula) return 1;
+        else if (init_declarator_list()){
+            if (tk == TKPontoEVirgula){
+                getToken();
+                return 1;
+            } 
+        }
+    }
+
+    return 0;
+}
+
 int statement(){
-    printf("Statement\n");
-    if(tk == TKIf){
+    // printf("Statement\n");
+    if (tk == TKFechaChaves) {
+        // se for o fim de um bloco, não é um statement e pode retornar imediatamente. Não precisa consumir no entanto, outra chamada irá cuidar disso. Essa verificação é só para evitar erros propagados
+        return 0;
+    }
+    else if(tk == TKIf){
         if (selection_statement()){
             return 1;
         }
@@ -638,12 +908,33 @@ int statement(){
         if (compound_statement()){
             return 1;
         }
-    }
-    else if (expression_statement()){
+    }  
+    
+    marcaPosToken();
+    if (declaration()){
         return 1;
     }
+    restauraPosToken();
+
+    marcaPosToken();
+    if (expression_statement()){
+        return 1;
+    }
+    restauraPosToken();
+    
     
     return 0;
+}
+
+int statement_list() {
+    int success = 0;
+
+    while (tk != TKEOF && statement()) {
+        success = 1; // reconheceu pelo menos um statement
+    }
+
+    if (errored) return 0;
+    return success;
 }
 
 int main()
@@ -665,7 +956,7 @@ int main()
 		getToken();
 	}*/
     // if (P())
-    if (statement())
+    if (statement_list())
         printf("Compilado com sucesso!");
     // else printf("Faca os ajustes no token %s (%s) e tente compilar novamente", tokens[tk-1], lex);
 }
