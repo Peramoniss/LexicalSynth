@@ -44,7 +44,7 @@ float g = d = 3;
 int funcao(int ca[], char tt){
     int a = c;
     a= b;
-    funcao(*funcao(a[]), b); //devo conseguir lidar com endereços?
+    funcao(funcao(a[5]), b+5); //devo conseguir lidar com endereços?
 };
 
 if(a=b){

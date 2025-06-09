@@ -60,7 +60,7 @@
 #define TKStatic 60
 #define TKConst 61
 #define TKCteFloat 62
-
+#define TKDuploMenos 63
 
 #define false 0
 #define true 1
@@ -134,6 +134,7 @@ char tokens[100][30] = {
     "TKEStatoc",              //60
     "TKConst",              //61
     "TKCteFloat",              //62
+    "TKDuploMenos",              //63
 };  
 
 int pos = 0;
@@ -457,6 +458,7 @@ int estado=0,
              if (c=='-'){
                 proxC();
                 if (c == '>'){lex[posl++]='>';lex[posl]='\0';proxC();tk=TKPtrOpr;/*printf("Reconheceu token TKSub\n");*/return;}
+                else if (c == '-') {lex[posl++]='-';lex[posl]='\0';proxC();tk=TKDuploMenos;return;}
                 else{lex[posl]='\0';tk=TKSub;/*printf("Reconheceu token TKSub\n");*/return;}
             }
              if (c=='*'){lex[posl]='\0';proxC();tk=TKProd;/*printf("Reconheceu token TKAbrePar\n");*/return;}
@@ -520,6 +522,7 @@ int estado=0,
 void getToken(){
     // printf("%s\n", tokens[tk-1]);
     getToken2();
+    fprintf(arqout, "%s identified in '%s', at line %d and column %d\n", tokens[tk-1], lex, lin, curr_col);
 }
 
 int errored = 0;
@@ -552,6 +555,7 @@ int postfix_expression();
 int expression();
 
 int argument_expression_list(){
+    printf("argument_expression_list");
     int retorno = 0;
     if (assignment_expression()){
         retorno = 1;
@@ -575,10 +579,12 @@ int postfix_expression(){
 	| postfix_expression INC_OP
 	| postfix_expression DEC_OP
     */
+   printf("POSTFIX");
    int retorno = 0;
     if (primary_expression()){
         retorno = 1;
         while (1){
+            printf("PRESO AQUI");
             if (tk == TKAbreColchete){
                 getToken();
                 if (expression()){
@@ -612,12 +618,19 @@ int postfix_expression(){
                     error("Identifier");
                     return 0;
                 }
-            }else break;    
+            }else break;/*else if (tk == TKProd){
+                getToken();
+                while(tk == TKProd) getToken();
+                if (tk == TKId){
+                    retorno = 1;
+                }else return 0;
+            }*/ 
         }
     }
 
     return retorno;
 }
+
 
 //------------Outros tipos de expressão------------------
 
@@ -692,7 +705,7 @@ int compound_statement(){
 }
 
 int expression_statement(){
-    // printf("Expression statement\n");
+    printf("Expression statement\n");
     if (tk == TKPontoEVirgula){
         return 1;
     }else if (expression()){
@@ -813,7 +826,7 @@ int direct_declarator(){
                 } else restauraPosToken(); // declarator falhou
             } else restauraPosToken(); // specifier falhou 
         }
-       else break;
+        else break;
     }
 
     return retorno;
@@ -870,6 +883,7 @@ int init_declarator_list(){
     printf("Init Declarator List\n");
     int declared = 0;
     while (init_declarator()){
+        printf("POIRR");
         declared = 1;
         if(tk == TKVirgula){
             getToken();
@@ -895,7 +909,7 @@ int declaration(){
 }
 
 int statement(){
-    // printf("Statement\n");
+    printf("Statement\n");
     if (tk == TKFechaChaves) {
         // se for o fim de um bloco, não é um statement e pode retornar imediatamente. Não precisa consumir no entanto, outra chamada irá cuidar disso. Essa verificação é só para evitar erros propagados
         return 0;
@@ -927,6 +941,8 @@ int statement(){
 }
 
 int statement_list() {
+    printf("statement list");
+
     int success = 0;
 
     while (tk != TKEOF && statement()) {
