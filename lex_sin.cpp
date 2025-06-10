@@ -568,6 +568,16 @@ int argument_expression_list(){
     return retorno;
 }
 
+int unary_expression(){
+    if (tk == TKProd || tk == TKAndLog || tk == TKSub || tk == TKMais || tk == TKNot){
+        getToken();
+        return unary_expression(); // chamada recursiva para o operando
+    }
+
+    return postfix_expression(); // caso não tenha operador unário, segue para expressão pós-fixada
+}
+
+
 int postfix_expression(){
     /*
     primary
@@ -618,13 +628,13 @@ int postfix_expression(){
                     error("Identifier");
                     return 0;
                 }
-            }else break;/*else if (tk == TKProd){
+            }else if (tk == TKProd || tk == TKAndLog){
                 getToken();
-                while(tk == TKProd) getToken();
+                while(tk == TKProd || tk == TKAndLog) getToken();
                 if (tk == TKId){
                     retorno = 1;
                 }else return 0;
-            }*/ 
+            }else break; 
         }
     }
 
@@ -634,25 +644,48 @@ int postfix_expression(){
 
 //------------Outros tipos de expressão------------------
 
+int multiplicative_expression(){
+    printf("Multiplicative statement\n");
+    if (unary_expression()){
+        while (tk == TKProd || tk == TKDiv || tk == TKMod){
+            getToken();
+            if(!unary_expression()){
+                error("expression after * / %");
+                return 0;
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
 int additive_expression(){
     printf("Additive statement\n");
-    //printf("????  _%s_  ", tokens[tk-1]);
-    if (postfix_expression()){
-        if (tk == TKMais){
+    marcaPosToken();
+    if (multiplicative_expression()){
+        if (tk == TKMais || tk == TKSub){
             getToken();
-            if(postfix_expression()){
                 if(additive_expression()){
                     return 1;
                 }
-            }
         }else{
             return 1;
         }    
     }
 
-    error("+");
-    return 0; //SUBSTITUIR POR PRÓXIMA NA CADEIA    
+    restauraPosToken();
+    return multiplicative_expression();
 }
+
+/*IMPLEMENTAR BITWISE NÃO UNÁRIO AQUI: Bitwise left shift and right shift??????*/
+/*IMPLEMENTAR RELACIONAIS AQUI, < <=*/
+/*IMPLEMENTAR RELACIONAIS AQUI, > >=*/
+/*IMPLEMENTAR RELACIONAIS AQUI,	== !=*/
+/*IMPLEMENTAR BITWISE &??????*/
+/*IMPLEMENTAR BITWISE ^??????*/
+/*IMPLEMENTAR BITWISE |??????*/
+/*IMPLEMENTAR LOGICOS AQUI, &&*/
+/*IMPLEMENTAR LOGICOS AQUI, ||*/
 
 int assignment_expression();
 
@@ -668,7 +701,7 @@ int assignment_expression(){
     marcaPosToken();
     if (tk == TKId){
         getToken();
-        if(tk == TKAtrib){
+        if(tk == TKAtrib){ //ADICIONAR DEMAIS ATRIBUIÇÕES
             getToken();
             if(assignment_expression()){
                 return 1;
@@ -679,6 +712,9 @@ int assignment_expression(){
     restauraPosToken();
     return additive_expression();
 }
+
+/*IMPLEMENTAR VIRGULA EM ALGUM LUGAR< TALVEZ AQUI*/
+/*POINTERS TERIAM QUE SER*/
 
 int statement_list();
 int statement();
@@ -718,6 +754,8 @@ int expression_statement(){
     error("';' (expression)");
     return 0;
 }
+
+/*POR AQUI TRABALHAR DEMAIS TIPOS DE STATEMENT: Do...While, While, For*/
 
 int selection_statement(){ 
     printf("Selection statement\n");

@@ -41,10 +41,13 @@ int **(*b) = 7;
 double a = 1.23, b = 1.579;
 float g = d = 3;
 
+h = 6 + 8;
+g = 3 * 6 + 8;
+
 int funcao(int ca[], char tt){
     int a = c;
     a= b;
-    funcao(funcao(a[5]), b+5); //devo conseguir lidar com endereços?
+    funcao(funcao(&a[5]), b+6*5/3+9-2*7); //devo conseguir lidar com endereços?
 };
 
 if(a=b){
