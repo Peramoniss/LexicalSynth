@@ -42,18 +42,25 @@ double a = 1.23, b = 1.579;
 float g = d = 3;
 
 h = 6 + 8;
-g = 3 * 6 + 8;
+h = 6 * 8;
+h = 6 / 8;
+h = 6 - 8;
+// g = 3 * 6 + 8;
 
 int funcao(int ca[], char tt){
     int a = c;
-    a= b;
+    a = b;
+	funcao(&a,b+6/7-2*9);
+	funcao(b+6*7-2);
     funcao(funcao(&a[5]), b+6*5/3+9-2*7); //devo conseguir lidar com endereços?
+	c = b;
 };
 
 if(a=b){
-    a = 0;
+    // a /= 0;
     b = 0;
 }
+// if(?{@
 
 if(a=b){
     a = 0;
