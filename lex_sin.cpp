@@ -45,13 +45,13 @@
 #define TKXOR 43
 #define TKXOREquals 44
 #define TKLeftShift 45
-#define TKLeftShiftAssign 46
+#define TKAtribLeftShift 46
 #define TKRightShift 47
-#define TKRightShiftAssign 48
+#define TKAtribRightShift 48
 #define TKPtrOpr 49
 #define TKEquals 50
 #define TKMod 51
-#define TKModAssign 52
+#define TKAtribMod 52
 #define TKSwitch 53
 #define TKCase 54
 #define TKDefault 55
@@ -63,6 +63,8 @@
 #define TKConst 61
 #define TKCteFloat 62
 #define TKDuploMenos 63
+#define TKAtribProd 64
+#define TKAtribMenos 66
 
 #define false 0
 #define true 1
@@ -136,7 +138,8 @@ char tokens[100][30] = {
     "TKEStatoc",              //60
     "TKConst",              //61
     "TKCteFloat",              //62
-    "TKDuploMenos",              //63
+    "TKAtribProd",          //63
+    "TKDuploMenos",              //64
 };  
 
 int pos = 0;
@@ -203,14 +206,14 @@ tcontexto pilhacon[1000];
 int topcontexto=0;
 int backtrack_mode = 0;
 
-void marcaPosToken() {
+tcontexto marcaPosToken() {
 	pilhacon[topcontexto].posglobal=ftell(arqin);
 	pilhacon[topcontexto].tkant=tk;
 	pilhacon[topcontexto].cant=c;
     strcpy(pilhacon[topcontexto].lexant,lex);
     pilhacon[topcontexto].coluna=col;
     topcontexto++;
-
+    return pilhacon[topcontexto-1];
     // backtrack_mode = 1; //indica que esta fazendo ma analise com o backtracking e nao deve exibir erros
 }
 
@@ -311,7 +314,7 @@ int estado=0,
              if (c=='%'){
                 proxC();
                 if(c == '>'){lex[posl++]='>';lex[posl]='\0';proxC();tk=TKFechaChaves;return;}
-                else if(c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKModAssign;return;}
+                else if(c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKAtribMod;return;}
                 else {lex[posl]='\0';tk=TKMod;/*printf("Reconheceu token TKAtrib\n");*/return;}
              }
              if (c=='.'){lex[posl]='\0';proxC();tk=TKPonto;return; }
@@ -320,7 +323,7 @@ int estado=0,
                 if (c == '<'){ //shift
                     lex[posl++] = '<';
                     proxC();
-                    if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKLeftShiftAssign;return;}
+                    if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKAtribLeftShift;return;}
                     else {lex[posl]='\0';tk=TKLeftShift;return;}
                 }
                 else if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKLessOrEqualThan;return;}
@@ -334,7 +337,7 @@ int estado=0,
                 if (c == '>'){ //shift
                     lex[posl++] = '>';
                     proxC();
-                    if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKRightShiftAssign;return;}
+                    if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKAtribRightShift;return;}
                     else {lex[posl]='\0';tk=TKRightShift;return;}
                 }
                 else if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKGreaterOrEqualThan;return;}
@@ -411,7 +414,7 @@ int estado=0,
                     lex[posl++]='&';
                     lex[posl]='\0';
                     proxC();
-                    tk=TKAnd;
+                    tk=TKAndLog;
                     return;
                 }
                 else if(c=='='){
@@ -422,7 +425,7 @@ int estado=0,
                     return;
                 }else{
                     lex[posl]='\0';
-                    tk=TKAndLog;
+                    tk=TKAnd;
                     // proxC();
                     return;
                 }
@@ -432,7 +435,7 @@ int estado=0,
                 if(c=='|'){
                     lex[posl++]='|';
                     lex[posl]='\0';
-                    tk=TKOr;
+                    tk=TKOrLog;
                     proxC();
                     return;
                 }
@@ -444,7 +447,7 @@ int estado=0,
                     return;
                 }else{
                     lex[posl]='\0';
-                    tk=TKOrLog;
+                    tk=TKOr;
                     // proxC();
                     return;
                 }
@@ -468,9 +471,14 @@ int estado=0,
                 proxC();
                 if (c == '>'){lex[posl++]='>';lex[posl]='\0';proxC();tk=TKPtrOpr;/*printf("Reconheceu token TKSub\n");*/return;}
                 else if (c == '-') {lex[posl++]='-';lex[posl]='\0';proxC();tk=TKDuploMenos;return;}
+                else if (c == '=') {lex[posl++]='=';lex[posl]='\0';proxC();tk=TKAtribMenos;return;}
                 else{lex[posl]='\0';tk=TKSub;/*printf("Reconheceu token TKSub\n");*/return;}
             }
-             if (c=='*'){lex[posl]='\0';proxC();tk=TKProd;/*printf("Reconheceu token TKAbrePar\n");*/return;}
+            if (c=='*'){
+                proxC();
+                if (c == '='){lex[posl++]='=';lex[posl]='\0';proxC();tk=TKAtribProd; return;}
+                else{lex[posl]='\0';tk=TKProd;return;}
+            }
              if (c=='['){lex[posl]='\0';proxC();tk=TKAbreColchete;/*printf("Reconheceu token TKAbrePar\n");*/return;}
              if (c==']'){lex[posl]='\0';proxC();tk=TKFechaColchete;/*printf("Reconheceu token TKAbrePar\n");*/return;}
              if (c=='('){lex[posl]='\0';proxC();tk=TKAbrePar;/*printf("Reconheceu token TKAbrePar\n");*/return;}
@@ -547,12 +555,22 @@ void error(const char expected_token[]){
     // exit(0);
 }
 
+int expression();
+
 int primary_expression(){
     // printf("  _%s_  ", tokens[tk-1]);
     if (DEBUG_MODE) printf("Primary expression\n");
     if (tk == TKId || tk == TKCteInt || tk == TKCteFloat || tk == TKConstChar){
         getToken(); //verifica aqui dentro porque ja comeca com o primeiro token lido. Entao esta sempre analisando "atrasado"
         return 1;
+    }else if (tk == TKAbrePar){
+        getToken();
+        if(expression()){
+            if(tk == TKFechaPar){
+                getToken();
+                return 1;
+            }
+        }
     }
     
     error("Identifier or Constant");
@@ -561,30 +579,21 @@ int primary_expression(){
 
 int assignment_expression();
 int postfix_expression();
-int expression();
+int pointer();
 
 int argument_expression_list(){
     if (DEBUG_MODE) printf("argument_expression_list");
     int retorno = 0;
-    if (assignment_expression()){
+    if (expression()){
         retorno = 1;
         while(tk == TKVirgula){
             getToken();
-            if(!assignment_expression())
+            if(!expression())
             { retorno = 0; break; }
         }
     }
 
     return retorno;
-}
-
-int unary_expression(){
-    if (tk == TKAndLog || tk == TKSub || tk == TKMais || tk == TKNot){
-        getToken();
-        return unary_expression(); // chamada recursiva para o operando
-    }
-
-    return postfix_expression(); // caso não tenha operador unário, segue para expressão pós-fixada
 }
 
 
@@ -609,7 +618,7 @@ int postfix_expression(){ //talvez tenha cometido um crime, vamos torcer para es
             }
             else if (tk == TKAbrePar){
                 // BACKTRACKING PROTEGENDO TODA A CHAMADA DE FUNÇÃO
-                marcaPosToken();
+                tcontexto cont = marcaPosToken();
 
                 getToken(); // consome '('
 
@@ -624,12 +633,23 @@ int postfix_expression(){ //talvez tenha cometido um crime, vamos torcer para es
                         continue; // chamada de função completa
                     } else {
                         error(")");
-                        restauraPosToken();
+                        // restauraPosToken();
+                        //testando localmente ao invés de usar pilha
+                        fseek(arqin,cont.posglobal,SEEK_SET);
+                        c=cont.cant;
+                        tk=cont.tkant;
+                        strcpy(lex,cont.lexant);
+                        col = cont.coluna;
                         return 0;
                     }
                 } else {
                     // argument_expression_list() falhou
-                    restauraPosToken();
+                    // restauraPosToken();
+                    fseek(arqin,cont.posglobal,SEEK_SET);
+                    c=cont.cant;
+                    tk=cont.tkant;
+                    strcpy(lex,cont.lexant);
+                    col = cont.coluna;
                     return 0;
                 }
             }
@@ -664,7 +684,14 @@ int postfix_expression(){ //talvez tenha cometido um crime, vamos torcer para es
     return retorno;
 }
 
+int unary_expression(){
+    if (tk == TKAnd || tk == TKSub || tk == TKMais || tk == TKNot || tk == TKBitNot || tk == TKDuploMais || tk == TKDuploMenos || tk == TKProd){
+        getToken();
+        return unary_expression(); // chamada recursiva para o operando
+    }
 
+    return postfix_expression(); // caso não tenha operador unário, segue para expressão pós-fixada
+}
 
 //------------Outros tipos de expressão------------------
 
@@ -687,47 +714,145 @@ int multiplicative_expression(){
 
 int additive_expression(){
     if (DEBUG_MODE) printf("Additive statement\n");
-    // marcaPosToken();
-    if (multiplicative_expression()){
-        if (tk == TKMais || tk == TKSub){
-            getToken();
-                if(additive_expression()){
-                    return 1;
-                }
-        }else{
-            return 1;
-        }    
+
+    if (!multiplicative_expression()) return 0;
+
+    while (tk == TKMais || tk == TKSub){
+        getToken();
+        if (!multiplicative_expression()){
+            error("expression");
+            return 0;
+        }
     }
 
-    // restauraPosToken();
-    return multiplicative_expression();
+    return 1;
 }
 
 /*IMPLEMENTAR BITWISE NÃO UNÁRIO AQUI: Bitwise left shift and right shift??????*/
 /*IMPLEMENTAR RELACIONAIS AQUI, < <=*/
 /*IMPLEMENTAR RELACIONAIS AQUI, > >=*/
 /*IMPLEMENTAR RELACIONAIS AQUI,	== !=*/
-/*IMPLEMENTAR BITWISE &??????*/
-/*IMPLEMENTAR BITWISE ^??????*/
-/*IMPLEMENTAR BITWISE |??????*/
-/*IMPLEMENTAR LOGICOS AQUI, &&*/
-/*IMPLEMENTAR LOGICOS AQUI, ||*/
+int bitwise_shift(){
+    if (!additive_expression()) return 0;
 
-int assignment_expression();
+    while (tk == TKLeftShift || tk == TKRightShift){
+        getToken();
+        if (!additive_expression()) {
+            error("");
+            return 0;
+        }
+    }
 
-int expression(){
-    if (DEBUG_MODE) printf("Expression\n");
-    if (assignment_expression()){return 1;}
-    
-    return 0;
+    return 1;
 }
+
+int relational_operators(){
+    if (!bitwise_shift()) return 0;
+
+    while (tk == TKLessThan || tk == TKLessOrEqualThan || tk == TKGreaterThan || tk == TKGreaterOrEqualThan){
+        getToken();
+        if (!bitwise_shift()) {
+            error("");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int relational(){
+    if (!relational_operators()) return 0;
+
+    while (tk == TKEquals || tk == TKNotEqual){
+        getToken();
+        if (!relational_operators()) {
+            error("expression after &");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int bitwise_and(){
+    if (!relational()) return 0;
+
+    while (tk == TKAnd){
+        getToken();
+        if (!relational()) {
+            error("expression after &");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int bitwise_xor(){
+    if (!bitwise_and()) return 0;
+
+    while (tk == TKXOR){
+        getToken();
+        if (!bitwise_and()) {
+            error("expression after ^");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int bitwise_or(){
+    if (!bitwise_xor()) return 0;
+
+    while (tk == TKOr){
+        getToken();
+        if (!bitwise_xor()) {
+            error("expression after |");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int logical_and(){
+    if (!bitwise_or()) return 0;
+
+    while (tk == TKOrLog){
+        getToken();
+        if (!additive_expression()) {
+            error("expression after ||");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int logical_or(){
+    if (!logical_and()) return 0;
+
+    while (tk == TKOrLog){
+        getToken();
+        if (!logical_and()) {
+            error("expression after ||");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 
 int assignment_expression(){
     if (DEBUG_MODE) printf("Assignment statement\n");
-    marcaPosToken();
+    tcontexto cont = marcaPosToken();
     if (tk == TKId){
         getToken();
-        if(tk == TKAtrib){ //ADICIONAR DEMAIS ATRIBUIÇÕES
+        if(tk == TKAtrib || tk ==TKAtribAnd || tk ==TKAtribDiv || tk ==TKAtribLeftShift
+        ||  tk ==TKAtribMais ||  tk ==TKAtribMenos || tk ==TKAtribMod || tk ==TKAtribOr
+        || tk ==TKAtribProd  || tk ==TKAtribRightShift){ 
             getToken();
             if(assignment_expression()){
                 return 1;
@@ -735,12 +860,45 @@ int assignment_expression(){
         }
     }
 
-    restauraPosToken();
-    return additive_expression(); 
+    // restauraPosToken();
+    fseek(arqin,cont.posglobal,SEEK_SET);
+    c=cont.cant;
+    tk=cont.tkant;
+    strcpy(lex,cont.lexant);
+    col = cont.coluna;
+    return logical_or(); 
 }
 
-/*IMPLEMENTAR VIRGULA EM ALGUM LUGAR< TALVEZ AQUI*/
-/*POINTERS TERIAM QUE SER*/
+int comma(){
+    if (!assignment_expression()) return 0;
+
+    while (tk == TKVirgula){
+        getToken();
+        if (!assignment_expression()){
+            error("expression after ','");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int expression(){
+    if (DEBUG_MODE) printf("Expression\n");
+    if (comma()){return 1;}
+    
+    return 0;
+}
+
+/*int pointer(){
+    if (tk == TKProd){
+        getToken();
+        while (tk == TKProd) getToken();
+        return 1;
+    }
+
+    return comma();
+}*/
 
 int statement_list();
 int statement();
@@ -779,6 +937,62 @@ int expression_statement(){
     }
     
     error("';' (expression)");
+    return 0;
+}
+
+int iteration_statement(){ 
+    if (DEBUG_MODE) printf("Iteration statement\n");
+    if (tk == TKFor){
+        getToken();
+        if (tk == TKAbrePar){
+            getToken();
+            if(expression_statement()){
+                if (expression_statement()){
+                    expression();
+                    if (tk == TKFechaPar){
+                        getToken();
+                        if (statement()){
+                            return 1;
+                        }
+                    }else error("')' (iteration)");
+                }else error("");
+                
+            }else error("')' (iteration)");
+        }else error("'(' (iteration)");
+    }else if (tk == TKWhile){
+        getToken();
+        if (tk == TKAbrePar){
+            getToken();
+            if (expression()){
+                if(tk == TKFechaPar){
+                    getToken();
+                    if (statement()) return 1;
+                }
+            }
+        }
+    }else if (tk == TKDo){
+        getToken();
+        if (statement()){
+            if (tk == TKWhile){
+                getToken();
+                if (tk == TKAbrePar){
+                    getToken();
+                    if (expression()){
+                        if (tk == TKFechaPar){
+                            getToken();
+                            if (tk == TKPontoEVirgula){
+                                getToken();
+                                return 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } 
+    
+    else error("'if' (iteration)");
+
     return 0;
 }
 
@@ -895,22 +1109,9 @@ int direct_declarator(){
     }
 
     return retorno;
-    /*
-
-	| direct_declarator '[' constant_expression ']'
-	| direct_declarator '[' ']'
-	| direct_declarator '(' parameter_type_list ')'
-	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '(' ')'
-	*/
 }
 
 int declarator(){
-    /*declarator
-	: pointer direct_declarator
-	| direct_declarator
-	;
-    */
     if (DEBUG_MODE) printf("Declarator\n");
     if (tk == TKProd){ //*
         getToken();
@@ -921,16 +1122,11 @@ int declarator(){
     return 0;
 }
 int init_declarator(){
-    /*
-    : declarator
-	| declarator '=' initializer
-	;
-    */
     if (DEBUG_MODE) printf("Init Declarator\n");
     if (declarator()){
         if (tk == TKAtrib){
             getToken();
-            if (assignment_expression()) return 1; //initializer
+            if (expression()) return 1; //initializer
         }       
 
         return 1;
@@ -940,11 +1136,6 @@ int init_declarator(){
 }
 
 int init_declarator_list(){
-    /*
-    : init_declarator
-	| init_declarator_list ',' init_declarator
-	;
-    */
     if (DEBUG_MODE) printf("Init Declarator List\n");
     int declared = 0;
     while (init_declarator()){
@@ -980,6 +1171,10 @@ int statement(){
     }
     else if(tk == TKIf){
         if (selection_statement()){
+            return 1;
+        }
+    }else if(tk == TKFor || tk == TKWhile || tk == TKDo){
+        if (iteration_statement()){
             return 1;
         }
     }else if (tk == TKAbreChaves){

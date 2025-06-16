@@ -1,5 +1,6 @@
 Based on: https://www.lysator.liu.se/c/ANSI-C-grammar-y.html#additive-expression
 
+Só usar backtracking em produções não fatoradas
 
 statement_list = statement_list statement | statement
 statement = selection_statement |  compound_statement | expression_statement | declaration
