@@ -8,31 +8,6 @@
 #define TKProd 15 (*, significa pointer nesse caso)
 #define TKAbreColchete 18
 #define TKFechaColchete 19 (para vetores)
-
-declaration
-	: declaration_specifiers ';'
-	| declaration_specifiers init_declarator_list ';'
-	;
-
-declaration_specifiers
-	: storage_class_specifier
-	| storage_class_specifier declaration_specifiers
-	| type_specifier
-	| type_specifier declaration_specifiers
-	| type_qualifier
-	| type_qualifier declaration_specifiers
-	;
-
-init_declarator_list
-	: init_declarator
-	| init_declarator_list ',' init_declarator
-	;
-
-init_declarator
-	: declarator
-	| declarator '=' initializer
-	;
-
 */
 float v[15][20][15][20];
 int a, b, c = 5;
@@ -45,7 +20,7 @@ h = 6 + 8 * 3 + 9 - 7 / 2;
 h += 6 * 8;
 h = 6 / 8;
 h = 6 - 8;
-// g = 3 * 6 + 8;
+g = 3 * 6 + 8;
 
 int funcao(int ca[], char tt){
     int a = c;
@@ -57,9 +32,10 @@ int funcao(int ca[], char tt){
 };
 
 a += (a + b);
-a -= (a + b);
-a /= (a + b);
-a *= (a + b);
+a -= (a - b);
+a /= (a / b);
+a *= (a * b);
+a %= (a % b);
 a >>= (a << b);
 a <<= (a >> b);
 
@@ -68,14 +44,13 @@ a = a & b | c ^ d;
 
 a = a == b;
 a = a != b;
-a = a, b = b;
+a = **a, b = b;
 a = - - -a;
 a = - --&~!a ;
 
 a[54](a - b);
 
 if(a > b | a < b){
-    // a /= 0;
     b = 0;
 }
 // if(?{@
