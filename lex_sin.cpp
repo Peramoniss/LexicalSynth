@@ -552,7 +552,6 @@ void error(const char expected_token[]){
 
         errored = 1;
     }
-    // exit(0);
 }
 
 int expression();
@@ -597,7 +596,7 @@ int argument_expression_list(){
 }
 
 
-int postfix_expression(){ //talvez tenha cometido um crime, vamos torcer para estar tudo certo
+int postfix_expression(){ 
     if (DEBUG_MODE) printf("POSTFIX\n");
 
     int retorno = 0;
@@ -702,7 +701,7 @@ int multiplicative_expression(){
         while (tk == TKProd || tk == TKDiv || tk == TKMod){
             getToken();
             if(!unary_expression()){
-                error("expression after * / %");
+                error("expression after one of the following: *, / or %");
                 return 0;
             }
         }
@@ -720,7 +719,7 @@ int additive_expression(){
     while (tk == TKMais || tk == TKSub){
         getToken();
         if (!multiplicative_expression()){
-            error("expression");
+            error("expression after one of the following: + or -");
             return 0;
         }
     }
@@ -728,17 +727,13 @@ int additive_expression(){
     return 1;
 }
 
-/*IMPLEMENTAR BITWISE NÃO UNÁRIO AQUI: Bitwise left shift and right shift??????*/
-/*IMPLEMENTAR RELACIONAIS AQUI, < <=*/
-/*IMPLEMENTAR RELACIONAIS AQUI, > >=*/
-/*IMPLEMENTAR RELACIONAIS AQUI,	== !=*/
 int bitwise_shift(){
     if (!additive_expression()) return 0;
 
     while (tk == TKLeftShift || tk == TKRightShift){
         getToken();
         if (!additive_expression()) {
-            error("");
+            error("expression after one of the following: << or >>");
             return 0;
         }
     }
@@ -752,7 +747,7 @@ int relational_operators(){
     while (tk == TKLessThan || tk == TKLessOrEqualThan || tk == TKGreaterThan || tk == TKGreaterOrEqualThan){
         getToken();
         if (!bitwise_shift()) {
-            error("");
+            error("expression after one of the following: + or -");
             return 0;
         }
     }
@@ -766,7 +761,7 @@ int relational(){
     while (tk == TKEquals || tk == TKNotEqual){
         getToken();
         if (!relational_operators()) {
-            error("expression after &");
+            error("expression after one of the following: == or !=");
             return 0;
         }
     }
@@ -819,10 +814,10 @@ int bitwise_or(){
 int logical_and(){
     if (!bitwise_or()) return 0;
 
-    while (tk == TKOrLog){
+    while (tk == TKAndLog){
         getToken();
         if (!additive_expression()) {
-            error("expression after ||");
+            error("expression after &&");
             return 0;
         }
     }
@@ -831,12 +826,12 @@ int logical_and(){
 }
 
 int logical_or(){
-    if (!logical_and()) return 0;
+    if (!logical_and()) return 0; //Doesn't call error() because it's not necessarily an error, as it could be that the code ended or simply this expression is not being a part of it
 
     while (tk == TKOrLog){
         getToken();
         if (!logical_and()) {
-            error("expression after ||");
+            error("expression after ||"); //This error will most likely never be called as well, since TKPontoEVirgula will generate an error first
             return 0;
         }
     }

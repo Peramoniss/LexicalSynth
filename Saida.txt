@@ -256,7 +256,9 @@ TKId identified in 'a', at line 42 and column 5
 TKOrLog identified in '||', at line 42 and column 7
 TKOrLog identified in '||', at line 42 and column 7
 TKId identified in 'b', at line 42 and column 10
-TKPontoEVirgula identified in ';', at line 42 and column 11
+TKAndLog identified in '&&', at line 42 and column 12
+TKId identified in 'a', at line 42 and column 15
+TKPontoEVirgula identified in ';', at line 42 and column 16
 TKId identified in 'a', at line 43 and column 1
 TKAtrib identified in '=', at line 43 and column 3
 TKId identified in 'a', at line 43 and column 5
